@@ -8,7 +8,7 @@ Tệp này được tạo bằng `python -m predictive_maintenance.report` từ 
 - SHA-256 của CSV gốc: `dc6630cd9b1f0f853922fad78a1b6436570d3f1ec863f1dd5c4340ac56bc8a8e`.
 - Tổng số bản ghi: **10,000**; tỷ lệ hỏng: **3.39%**.
 - Chia stratified với seed **42**: train **6,400**, validation **1,600**, test **2,000**.
-- Chỉ dùng sáu đặc trưng đầu vào; bỏ `UID`, `Product ID` và các nhãn nguyên nhân hỏng (`TWF`, `HDF`, `PWF`, `OSF`, `RNF`) để tránh rò rỉ nhãn.
+- Chỉ dùng sáu đặc trưng đầu vào; bỏ `UDI`, `Product ID` và các nhãn nguyên nhân hỏng (`TWF`, `HDF`, `PWF`, `OSF`, `RNF`) để tránh rò rỉ nhãn.
 - Chọn mô hình bằng average precision trên validation; chọn ngưỡng cảnh báo bằng F2 trên validation; test chỉ dùng để báo cáo mô hình đã chọn.
 
 ## So sánh mô hình trên validation

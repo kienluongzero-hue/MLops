@@ -1,0 +1,45 @@
+\chapter{Cơ sở lý thuyết và công nghệ}
+\section{Phân loại nhị phân trong dữ liệu mất cân bằng}
+Với bài toán nhị phân, một dự đoán có bốn khả năng: đúng âm (TN), dương giả (FP), âm giả (FN) và đúng dương (TP). Khi tỷ lệ dương thấp, accuracy có thể cao ngay cả khi mô hình luôn dự đoán không hỏng. Trên bộ dữ liệu này, mô hình luôn trả về không hỏng sẽ có accuracy 96,61\% nhưng recall bằng 0. Vì vậy nhóm tập trung vào khả năng xếp hạng các bản ghi hỏng và sự đánh đổi giữa cảnh báo sai với bỏ sót.
+
+Precision và recall được tính theo
+\begin{equation}
+\mathrm{Precision}=\frac{TP}{TP+FP},\qquad
+\mathrm{Recall}=\frac{TP}{TP+FN}.
+\end{equation}
+Điểm $F_\beta$ là trung bình điều hòa có trọng số:
+\begin{equation}
+F_\beta=(1+\beta^2)\frac{\mathrm{Precision}\cdot\mathrm{Recall}}{\beta^2\mathrm{Precision}+\mathrm{Recall}}.
+\end{equation}
+Với $\beta=2$, recall nhận trọng số lớn hơn precision. Chỉ số này phụ thuộc ngưỡng $t$; do đó chọn ngưỡng trên tập test sẽ làm sai lệch kết quả báo cáo. Trong quy trình của nhóm, $t$ chỉ được tối ưu trên validation.
+
+Đường precision--recall mô tả hiệu năng khi thay đổi ngưỡng. \emph{Average precision} (AP) tổng hợp đường này theo mức tăng recall, không cần chốt trước một ngưỡng. Khi dữ liệu mất cân bằng, đường PR cho biết rõ hơn tỷ lệ dự báo hỏng thật trong số các cảnh báo; nghiên cứu của Saito và Rehmsmeier cũng chỉ ra lợi ích của đường PR trong bối cảnh này \cite{saito2015}. Báo cáo dùng tên ``PR-AUC'' trong bảng để dễ đọc, song số liệu cụ thể được tính bằng \src{sklearn.metrics.average_precision_score}; AP và diện tích nội suy hình thang không hoàn toàn đồng nhất. ROC-AUC vẫn được báo cáo để bổ sung góc nhìn về thứ hạng dương--âm, chứ không thay thế precision và recall tại ngưỡng vận hành.
+
+\section{Ba họ mô hình được khảo sát}
+Logistic Regression ước lượng xác suất thông qua hàm sigmoid của tổ hợp tuyến tính đặc trưng. Đây là đường chuẩn dễ diễn giải và huấn luyện nhanh. Tùy chọn \src{class_weight="balanced"} tăng trọng số tương đối cho lớp hỏng trong quá trình khớp mô hình. Dù vậy, quan hệ giữa cảm biến và hỏng máy có thể phi tuyến, khiến mô hình tuyến tính khó nắm bắt đủ.
+
+Random Forest là tập hợp nhiều cây quyết định được huấn luyện trên các mẫu bootstrap và lựa chọn tập con thuộc tính, rồi tổng hợp dự đoán \cite{breiman2001}. Mô hình có thể học tương tác phi tuyến và ít cần giả định dạng hàm. Trong triển khai này có 200 cây, mỗi lá tối thiểu hai quan sát và trọng số lớp được cân bằng theo từng mẫu bootstrap. Các lựa chọn này được cố định trước khi nhìn tập test; chúng không phải kết quả của tìm kiếm siêu tham số toàn diện.
+
+XGBoost xây dựng tuần tự các cây tăng cường gradient, tối ưu hàm mất mát có điều chuẩn và hỗ trợ nhiều tối ưu hóa tính toán \cite{chen2016}. Nhóm sử dụng 250 cây, độ sâu tối đa 4, tốc độ học 0,05, tỷ lệ lấy mẫu bản ghi và thuộc tính cùng bằng 0,9. Trong bộ ba ứng viên, XGBoost là mô hình phức tạp hơn, do đó cần đối chiếu trên validation và đánh giá riêng trên test. Giá trị độ quan trọng thuộc tính của mô hình không phải bằng chứng về quan hệ nhân quả.
+
+\section{Tách dữ liệu và kiểm soát rò rỉ}
+Ba tập có nhiệm vụ khác nhau. Train dùng để khớp bộ biến đổi và tham số mô hình. Validation dùng để so sánh ứng viên và chọn ngưỡng. Test được giữ lại cho một lần đánh giá kết quả đã chọn. Hàm \src{train_test_split} với \src{stratify} giữ tỷ lệ lớp gần nhau giữa các tập; \src{random_state=42} làm phép chia lặp lại được. Pipeline của scikit-learn gói OneHotEncoder, StandardScaler và bộ phân loại để các tham số biến đổi chỉ được học trên train.
+
+Rò rỉ nhãn có thể xuất hiện ngay trong schema. Năm cột TWF, HDF, PWF, OSF, RNF mô tả các chế độ lỗi liên quan trực tiếp đến nhãn mục tiêu; đưa chúng vào đầu vào sẽ cho mô hình thông tin mà dịch vụ suy luận bình thường không có. Hai cột định danh \src{UDI} và \src{Product ID} cũng bị loại bỏ để tránh học trật tự hoặc mã sản phẩm thay vì tín hiệu cảm biến. Một danh sách cho phép sáu thuộc tính được dùng chung bởi huấn luyện, API và giám sát giúp tránh bất đồng schema.
+
+\section{MLOps và các thành phần được chọn}
+MLOps ở đây được hiểu là thực hành quản lý toàn bộ đường đi từ dữ liệu đến suy luận và quan sát. DVC định nghĩa các giai đoạn có phụ thuộc và đầu ra; khi chạy \src{dvc repro}, công cụ kiểm tra thay đổi và chạy lại bước cần thiết \cite{dvc}. DVC không tự bảo đảm khả năng tải lại dữ liệu nếu nguồn bên ngoài biến mất. Vì thế báo cáo ghi SHA-256 của CSV gốc, còn repository chưa cấu hình DVC remote để phân phối cache dữ liệu và mô hình.
+
+MLflow Tracking lưu tham số, chỉ số và hiện vật của từng lượt chạy trong một kho theo dõi \cite{mlflow}. Với cấu hình hiện tại, kho là SQLite cục bộ. Điều này đủ để so sánh thí nghiệm trên một máy nhưng chưa tạo một máy chủ thí nghiệm chung cho nhóm. FastAPI dùng khai báo dữ liệu để xác thực JSON đầu vào và cung cấp mô tả OpenAPI \cite{fastapi}. Docker đóng gói môi trường chạy API thành image từ Dockerfile \cite{docker}. GitHub Actions thực thi kiểm thử khi push hoặc mở pull request \cite{actions}. Vai trò các công cụ là bổ trợ nhau; không công cụ nào tự thay thế việc đo chất lượng mô hình hay kiểm tra dữ liệu đầu vào.
+
+\section{Giám sát sự thay đổi phân phối}
+Một mô hình được huấn luyện trên phân phối tham chiếu $P_{\mathrm{train}}(X)$; các lô mới có thể đến từ $P_{\mathrm{new}}(X)$ khác. Công cụ giám sát của nhóm so sánh từng thuộc tính, không ước lượng trực tiếp độ chính xác mô hình. Với biến phân loại \src{Type}, khoảng cách total variation là
+\begin{equation}
+D_{\mathrm{TV}}(P,Q)=\frac{1}{2}\sum_{c\in\{L,M,H\}}|P(c)-Q(c)|.
+\end{equation}
+Với các thuộc tính số, thống kê Kolmogorov--Smirnov hai mẫu là
+\begin{equation}
+D_{n,m}=\sup_x\left|\widehat F_n(x)-\widehat G_m(x)\right|,
+\end{equation}
+trong đó $\widehat F_n$ và $\widehat G_m$ là các hàm phân phối tích lũy thực nghiệm. Triển khai dùng \src{scipy.stats.ks_2samp} \cite{scipyks}. Ngưỡng cảnh báo được chọn để minh họa: TV $\geq0,10$; KS $\geq0,20$ đồng thời $p<0,01$. Đây không phải ngưỡng đã hiệu chuẩn bằng dữ liệu vận hành thật. Khi kiểm tra nhiều thuộc tính, nguy cơ cảnh báo ngẫu nhiên cũng cần được xem xét nếu triển khai quy mô lớn.
+

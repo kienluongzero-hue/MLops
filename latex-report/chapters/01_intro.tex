@@ -1,0 +1,24 @@
+\chapter{Giới thiệu đề tài}
+\section{Bối cảnh}
+Thiết bị trong một hệ thống sản xuất tạo ra các phép đo về nhiệt độ, tốc độ quay, mô-men xoắn và mức hao mòn. Nếu có thể nhận ra các trạng thái liên quan đến hỏng máy từ những phép đo này, người vận hành có thêm tín hiệu để kiểm tra thiết bị. Tuy nhiên, một mô hình có chỉ số tốt trong notebook chưa đủ để sử dụng có hệ thống. Cần biết dữ liệu nào đã được dùng, phiên bản mã nào sinh ra mô hình, ngưỡng ra quyết định ra sao, dịch vụ có nhận đúng cấu trúc dữ liệu hay không và phân phối dữ liệu mới có khác dữ liệu huấn luyện không. Đây là lý do đề tài đặt trọng tâm vào vòng đời mô hình bên cạnh thuật toán phân loại. Những vấn đề về phụ thuộc dữ liệu và cấu hình trong hệ thống ML cũng được Sculley và cộng sự mô tả như một dạng nợ kỹ thuật \cite{sculley2015}.
+
+Nhóm chọn \dataset{} do UCI công bố \cite{uci2020}. Dữ liệu có 10.000 quan sát và một nhãn nhị phân về hỏng máy; sáu thuộc tính đầu vào có ý nghĩa trực quan. Quy mô vừa đủ để huấn luyện và chạy lại pipeline trên máy cá nhân. Dữ liệu là mô phỏng, điều này giúp khảo sát quy trình kỹ thuật nhưng giới hạn khả năng suy rộng kết quả sang thiết bị thật. Tên gọi predictive maintenance trong nguồn dữ liệu và tên dự án được giữ để phản ánh bối cảnh, còn bài toán được đo chính xác trong báo cáo là \emph{phân loại trạng thái hỏng của từng bản ghi}.
+
+\section{Bài toán và câu hỏi nghiên cứu}
+Gọi $x_i$ là sáu phép đo và thuộc tính loại sản phẩm của bản ghi thứ $i$, $y_i\in\{0,1\}$ là nhãn \src{Machine failure}. Mục tiêu mô hình là ước lượng $p_i=P(y_i=1\mid x_i)$ và phát cảnh báo nếu $p_i\geq t$. Vì chỉ 3,39\% bản ghi mang nhãn hỏng, chọn ngưỡng $t$ và cách đo kết quả quan trọng không kém lựa chọn thuật toán.
+
+Báo cáo trả lời bốn câu hỏi. Thứ nhất, dữ liệu và nhãn có những đặc điểm nào khiến bài toán khó? Thứ hai, trong ba họ mô hình được thử, mô hình nào phù hợp nhất theo average precision trên tập validation? Thứ ba, một người khác có thể chạy lại chuỗi tải dữ liệu, huấn luyện và phục vụ kết quả bằng các thành phần nào? Thứ tư, hệ thống phản ứng thế nào khi phân phối đầu vào của một lô mới thay đổi có chủ đích? Các câu hỏi được trả lời bằng hiện vật chạy thực tế, thay vì mô tả kiến trúc dự kiến.
+
+\section{Mục tiêu và sản phẩm}
+Mục tiêu thứ nhất là tạo một quy trình huấn luyện có thể tái tạo: dữ liệu nguồn xác định được, phép chia tập cố định, tiền xử lý nằm trong pipeline của mô hình và quyết định lựa chọn dựa trên validation. Mục tiêu thứ hai là tạo dịch vụ dự đoán với hợp đồng đầu vào rõ ràng và môi trường đóng gói bằng Docker. Mục tiêu thứ ba là lưu dấu vết thực nghiệm và kiểm tra tự động. Mục tiêu cuối là theo dõi độ lệch phân phối đầu vào trên các lô dữ liệu, đồng thời phân biệt cảnh báo chất lượng dữ liệu với đánh giá chất lượng dự đoán.
+
+Sản phẩm cụ thể của repository là mã Python, \src{dvc.yaml} và \src{dvc.lock}, tệp cấu hình phụ thuộc, kiểm thử, Dockerfile, các hiện vật được sinh bởi pipeline, báo cáo thực nghiệm và tài liệu này. Mô hình nhị phân \src{model.joblib} được sinh cục bộ khi huấn luyện; Git chỉ lưu mã và định nghĩa pipeline. Cách tổ chức này giúp người đọc thấy rõ bước nào là đầu vào, bước nào là sản phẩm có thể tái tạo.
+
+\section{Phạm vi và giả định}
+Hệ thống xử lý một bộ dữ liệu bảng tĩnh và một yêu cầu API cho mỗi bản ghi. Các lô giám sát là tệp CSV, chưa phải luồng dữ liệu thời gian thực. Báo cáo không gán chi phí tiền tệ cho một cảnh báo sai hoặc một lỗi bỏ sót vì chưa có thông tin kinh doanh để xác định chi phí. Việc ưu tiên recall thông qua $F_2$ là một lựa chọn minh họa: trong ngữ cảnh bảo trì, bỏ sót một trạng thái hỏng có thể đáng quan tâm, nhưng quyết định thực tế phải do đơn vị vận hành xác lập.
+
+Dữ liệu không chứa dấu thời gian, mã thiết bị có thể theo dõi lâu dài hoặc thời điểm hỏng trong tương lai. Vì thế phép chia ngẫu nhiên có phân tầng ở đây chỉ kiểm tra khả năng phân loại trên các bản ghi cùng phân phối giả định. Nó không chứng minh mô hình dự báo sớm cho thiết bị chưa từng thấy. Phần thảo luận sẽ quay lại giới hạn này khi diễn giải kết quả và đề xuất bước tiếp theo.
+
+\section{Bố cục báo cáo}
+Chương 2 trình bày cơ sở về bài toán mất cân bằng, chỉ số đánh giá và các công cụ MLOps. Chương 3 phân tích bộ dữ liệu và rủi ro rò rỉ nhãn. Chương 4 mô tả thiết kế hệ thống; chương 5 trình bày huấn luyện và quy tắc chọn mô hình. Chương 6 đi vào hiện thực DVC, MLflow, API, Docker và CI. Chương 7 ghi nhận kết quả mô hình cùng thử nghiệm giám sát. Chương 8 kết luận, nêu giới hạn và hướng phát triển. Các phụ lục đưa ra lệnh chạy lại và hợp đồng API.
+

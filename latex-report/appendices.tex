@@ -1,0 +1,102 @@
+\chapter{Hướng dẫn tái tạo thực nghiệm}
+\section{Điều kiện chạy}
+Máy cần Python từ 3.11 đến dưới 3.14, Git và kết nối đến nguồn UCI khi tải dữ liệu. Docker Desktop chỉ cần cho bước chạy API trong container. Các lệnh sau được viết theo PowerShell ở thư mục gốc repository. Việc cài package dùng \src{pyproject.toml}; môi trường chạy báo cáo cụ thể dùng Python 3.13.12. Nếu người đọc dùng phiên bản thư viện khác, cần so sánh kết quả trong \src{artifacts/metrics.json} thay vì giả định mọi chữ số thập phân giống nhau.
+
+\begin{lstlisting}[language={},caption={Tạo môi trường và cài phụ thuộc}]
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e ".[train,report,dev]"
+\end{lstlisting}
+Sau cài đặt, có thể chạy \src{python -m pytest} để kiểm tra mã trước khi tạo hiện vật. Nếu PowerShell chặn kích hoạt script theo chính sách máy, có thể gọi trực tiếp tệp \src{python.exe} trong thư mục \src{.venv/Scripts} thay vì thay đổi chính sách toàn hệ thống.
+
+\section{Tải dữ liệu và huấn luyện}
+\begin{lstlisting}[language={},caption={Chạy pipeline và kiểm tra hiện vật}]
+dvc repro
+python -m predictive_maintenance.report
+Get-Content artifacts/metrics.json
+\end{lstlisting}
+Lệnh \src{dvc repro} chạy hai stage theo phụ thuộc. Bước tải dữ liệu lấy CSV gốc và kiểm tra SHA-256. Bước train sinh ba tệp trong \src{artifacts}. Nếu đã có hiện vật và phụ thuộc không đổi, DVC có thể bỏ qua stage; muốn tái chạy để kiểm tra từ đầu cần dùng lựa chọn phù hợp của DVC và lưu ý rằng nguồn tải phải khả dụng. Khi chạy báo cáo bằng chứng, các lô giám sát ở phần kế tiếp cần được tạo trước nếu muốn kết quả giám sát đầy đủ.
+
+\section{Tạo lô giám sát và kiểm tra cảnh báo}
+\begin{lstlisting}[language={},caption={Tạo và so sánh hai lô demo}]
+python -m predictive_maintenance.simulate \
+  --output data/monitoring/normal.csv
+python -m predictive_maintenance.monitor \
+  --current data/monitoring/normal.csv \
+  --output artifacts/monitoring/normal.json
+python -m predictive_maintenance.simulate --drift \
+  --output data/monitoring/drifted.csv
+python -m predictive_maintenance.monitor \
+  --current data/monitoring/drifted.csv \
+  --output artifacts/monitoring/drifted.json
+python -m predictive_maintenance.report
+\end{lstlisting}
+Các dấu nối dòng trong Listing trên minh họa cách trình bày; trong PowerShell nên chạy mỗi lệnh trên một dòng hoặc dùng ký tự nối dòng PowerShell. Cần đối chiếu \src{status} trong hai tệp JSON: bình thường là \src{ok}, dịch chuyển là \src{alert}. Tệp \src{reports/evidence.md} được tạo lại sau khi đủ hai báo cáo giám sát.
+
+\section{Khởi chạy API}
+\begin{lstlisting}[language={},caption={Chạy API trên máy và gọi thử}]
+uvicorn predictive_maintenance.api:app \
+  --host 127.0.0.1 --port 8000
+\end{lstlisting}
+Trong PowerShell khác, có thể gọi \src{Invoke-RestMethod} như README. \src{GET http://127.0.0.1:8000/health} trả \src{status: ok} nếu mô hình nạp được. Gửi yêu cầu thiếu \src{torque} hoặc \src{type} ngoài L/M/H sẽ bị xác thực từ chối. Điều này kiểm tra cấu trúc đầu vào, không phải bài kiểm tra độ chính xác mô hình. Tài liệu tương tác của FastAPI ở đường \src{/docs} khi server đang chạy.
+
+\section{Biên dịch bản báo cáo}
+\begin{lstlisting}[language={},caption={Tạo bảng, hình và biên dịch LaTeX}]
+python latex-report/generate_assets.py
+cd latex-report
+latexmk -xelatex -interaction=nonstopmode \
+  -halt-on-error -file-line-error \
+  -outdir=build main.tex
+\end{lstlisting}
+Nguồn LaTeX dùng XeLaTeX để hiển thị tiếng Việt với Times New Roman. Script tạo hình kiểm tra dấu băm của CSV và tính nhất quán của hiện vật trước khi ghi các bảng trong \src{generated}. Nếu có thay đổi số liệu, cần chạy lại script trước bước biên dịch. PDF bàn giao nằm ở \src{output/pdf} trong repository; thư mục \src{build} chứa tệp trung gian.
+
+\chapter{Hợp đồng dữ liệu và API}
+\section{Schema đầu vào dự đoán}
+\begin{longtable}{p{4.2cm}p{3cm}p{6.5cm}}
+\caption{Các trường JSON của \src{POST /predict}}\label{tab:api-schema}\\
+\toprule Trường & Kiểu / điều kiện & Ánh xạ đến cột huấn luyện\\\midrule\endfirsthead
+\toprule Trường & Kiểu / điều kiện & Ánh xạ đến cột huấn luyện\\\midrule\endhead
+\src{type} & L, M hoặc H & \src{Type}\\
+\src{air_temperature} & số thực $>0$ & \src{Air temperature [K]}\\
+\src{process_temperature} & số thực $>0$ & \src{Process temperature [K]}\\
+\src{rotational_speed} & số nguyên $>0$ & \src{Rotational speed [rpm]}\\
+\src{torque} & số thực $\geq0$ & \src{Torque [Nm]}\\
+\src{tool_wear} & số nguyên $\geq0$ & \src{Tool wear [min]}\\\bottomrule
+\end{longtable}
+API trả một xác suất thực trong đoạn $[0,1]$, một giá trị Boolean về cảnh báo và ngưỡng đọc từ bundle. Không có trường định danh thiết bị hoặc thời điểm, do đó API không lưu chuỗi lịch sử. Muốn dùng trong một hệ thống thực, cần định nghĩa phiên bản schema, đơn vị đo và phạm vi hợp lý theo từng dòng máy, đồng thời gắn định danh yêu cầu để đối chiếu khi có nhãn đến trễ.
+
+\section{Schema lô giám sát}
+CSV giám sát phải có đủ sáu cột tên như Bảng~\ref{tab:features}. Monitor không cần cột nhãn. Nó chấp nhận cột bổ sung nhưng chỉ chọn sáu trường đã định. Tham chiếu đọc từ \src{artifacts/reference.csv}; dữ liệu mới đọc qua \src{--current}. Tệp tham chiếu phải có \src{Type} hợp lệ và mọi giá trị số hữu hạn. Với lô mới, giá trị không hợp lệ được đếm vào \src{quality_issues}; nếu một cột hoàn toàn không có giá trị số hợp lệ thì thống kê drift của cột đó là \src{null}. Lô dưới 100 dòng bị đánh dấu vấn đề chất lượng. Trạng thái \src{alert} cũng được bật khi có lỗi chất lượng dù không phát hiện drift.
+
+\section{Giải thích các trường trong báo cáo giám sát}
+Tệp JSON có \src{reference_rows}, \src{current_rows}, \src{drift_detected}, \src{drifted_features}, \src{data_quality_alert}, \src{quality_issues}, \src{status} và bản ghi \src{features} cho từng thuộc tính. Với Type, bản ghi chứa khoảng cách TV, ngưỡng và số hàng không hợp lệ. Với biến số, nó chứa thống kê KS, p-value, ngưỡng, trung bình tham chiếu, trung bình lô mới và số hàng không hợp lệ. Cấu trúc này cho phép phân biệt thay đổi phân phối với trục trặc trong dữ liệu nhập.
+
+\chapter{Đối chiếu số liệu và giới hạn diễn giải}
+\section{Các phép kiểm tra số học}
+Các tỷ lệ trong báo cáo có thể kiểm tra từ số đếm gốc. Tỷ lệ hỏng toàn bộ là $339/10000=0,0339$. Tỷ lệ theo các tập lần lượt là $217/6400\approx0,0339$, $54/1600=0,03375$ và $68/2000=0,034$. Ma trận test có tổng $1898+34+14+54=2000$. Số dương thực là $14+54=68$, số âm thực là $1898+34=1932$. Số cảnh báo là $34+54=88$. Precision và recall tính từ các số đếm này khớp với metric lưu.
+
+\section{Ý nghĩa của average precision}
+Trong scikit-learn, average precision là tổng có trọng số của precision tại các mức thay đổi recall. Nó không bằng precision ở ngưỡng 0,15. Khi báo cáo so sánh AP giữa ba mô hình, nhóm chỉ kết luận về khả năng sắp xếp bản ghi trong phép chia đang dùng. Nếu người vận hành chỉ có năng lực kiểm tra một số ít máy mỗi ngày, cần thêm chỉ số như precision ở top-$k$, tỷ lệ cảnh báo/ngày và chi phí theo lịch sản xuất. Những thông tin này chưa có trong dữ liệu hiện tại.
+
+\section{Các nguồn sai lệch cần chú ý}
+Nguồn sai lệch thứ nhất là dữ liệu tổng hợp: cấu trúc quan hệ có thể đơn giản hơn thực tế. Nguồn thứ hai là chia ngẫu nhiên trên bản ghi thay vì chia theo máy hoặc thời gian; kết quả không đại diện cho máy mới hay tương lai. Nguồn thứ ba là lựa chọn cấu hình mô hình hạn chế; điểm XGBoost là điểm của một cấu hình cụ thể. Nguồn thứ tư là tối ưu ngưỡng theo một validation có 54 trường hợp hỏng; ngưỡng có thể dao động khi đổi mẫu. Nguồn thứ năm là monitor được thử với dịch chuyển lớn, có chủ đích; nó chưa được đo tỷ lệ báo giả qua nhiều lô bình thường.
+
+\section{Tiêu chí chuyển sang thử nghiệm thực tế}
+Trước khi thử trên thiết bị thật, cần xác định câu hỏi vận hành: cảnh báo trước bao nhiêu giờ hoặc chu kỳ, ai nhận cảnh báo, hành động kiểm tra nào được thực hiện và chi phí của mỗi hành động. Sau đó cần thu thập dữ liệu có dấu thời gian, dữ liệu sự cố đã xác nhận và thông tin thiết bị. Mô hình phải được đánh giá trên giai đoạn sau thời điểm huấn luyện, tốt hơn nữa trên thiết bị không xuất hiện trong train. Trong thử nghiệm bóng, hệ thống có thể ghi dự đoán mà chưa chi phối hành động, để đo tỷ lệ cảnh báo và chất lượng khi nhãn đến. Chỉ sau các bước này mới có cơ sở quyết định triển khai có tác động đến sản xuất.
+
+\chapter{Quy trình kiểm tra một cảnh báo vận hành}
+\section{Khi API không nạp được mô hình}
+Nếu \src{/health} trả 503, trước tiên kiểm tra tệp \src{artifacts/model.joblib} có tồn tại tại đường dẫn được cấu hình bởi \src{MODEL_PATH} hay không. Trong container, kiểm tra volume \src{artifacts} đã được gắn đúng vào \src{/app/artifacts} ở chế độ đọc. Tiếp theo kiểm tra phiên bản các thư viện dùng để tạo và nạp bundle; một hiện vật joblib tạo ở môi trường khác có thể không tương thích. Chỉ khi mô hình nạp được mới thực hiện thử \src{/predict} bằng một bản ghi có giá trị hợp lệ. Không nên thay thế lỗi 503 bằng một xác suất mặc định, vì như vậy người nhận API không biết dự đoán đã không được tính.
+
+Sau khi sửa vấn đề nạp mô hình, cần ghi phiên bản mã, hash hiện vật và thời điểm khởi động lại. Bản mẫu hiện chỉ thực hiện kiểm tra nạp tệp; một quy trình vận hành thật nên có bài kiểm tra dự đoán chuẩn với đầu vào và đầu ra kỳ vọng trong sai số cho phép. Kiểm tra này giúp phát hiện trường hợp mô hình nạp được nhưng schema hoặc phiên bản tiền xử lý không trùng với môi trường huấn luyện.
+
+\section{Khi monitor trả trạng thái alert}
+Trước tiên đọc \src{data_quality_alert} và \src{quality_issues}. Nếu có giá trị thiếu, không hữu hạn, \src{Type} lạ hoặc lô dưới 100 dòng, cần kiểm tra nguồn dữ liệu trước khi diễn giải thống kê drift. Các thống kê được tính sau khi loại giá trị số không hợp lệ; một lô có nhiều giá trị lỗi có thể cho kết quả phân phối không đại diện. Sau đó đọc \src{drifted_features} và chi tiết từng thuộc tính để xác định thay đổi nằm ở tần suất danh mục hay phân phối biến số.
+
+Với cảnh báo Type, so sánh tỷ lệ L/M/H của lô mới và tập train để xem nguồn sản phẩm có thay đổi thật hay do lỗi ánh xạ mã. Với cảnh báo nhiệt độ hoặc mô-men, kiểm tra đơn vị đo, cấu hình cảm biến và điều kiện vận hành trước khi kết luận máy có vấn đề. Ví dụ, cộng nhầm độ C vào dữ liệu đã ghi bằng K sẽ tạo thay đổi lớn mà không phản ánh hiện tượng vật lý mới. Nếu dữ liệu hợp lệ, có thể tăng tần suất lấy mẫu nhãn và kiểm tra đầu ra mô hình trên các ca được chuyên gia xác nhận.
+
+\section{Quyết định sau khi xác minh cảnh báo}
+Một cảnh báo đầu vào không đủ để đổi mô hình. Nếu chỉ thay đổi cơ cấu sản phẩm nhưng chất lượng dự đoán vẫn đạt yêu cầu, có thể tiếp tục theo dõi. Nếu precision hoặc recall đo từ nhãn thật giảm, cần kiểm tra xem lỗi đến từ dữ liệu thu thập, thay đổi quy trình hay quan hệ giữa cảm biến và sự cố. Khi có mô hình ứng viên mới, đánh giá nó trên một tập thời gian gần đây không dùng để huấn luyện, so sánh chi phí cảnh báo và thử nghiệm bóng. Việc phát hành phải lưu được phiên bản cũ và có cách quay lại nếu tỷ lệ lỗi tăng.
+
+Bản mẫu chưa tự động hóa các quyết định này. Tệp JSON của monitor là một tín hiệu đầu vào cho người phụ trách, không phải mệnh lệnh huấn luyện lại. Quy trình thủ công có ghi nhận bằng chứng là lựa chọn phù hợp khi dữ liệu nhãn và mục tiêu vận hành chưa đủ rõ để đặt các ngưỡng tự động đáng tin.
+

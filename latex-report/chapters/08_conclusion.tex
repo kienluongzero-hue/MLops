@@ -1,0 +1,16 @@
+\chapter{Kết luận và hướng phát triển}
+\section{Kết quả đạt được}
+Nhóm đã xây dựng một dự án MLOps từ dữ liệu \dataset{} đến dịch vụ dự đoán và báo cáo giám sát. Dữ liệu được tải và xác thực, sáu thuộc tính đầu vào được định nghĩa nhất quán, phép chia train/validation/test có phân tầng, ba ứng viên được so sánh theo AP, ngưỡng được chọn trên validation bằng $F_2$. XGBoost được chọn với ngưỡng 0,15; trên test, mô hình đạt AP 0,825 và phát hiện 54 trong 68 bản ghi hỏng. Bên cạnh mô hình, dự án có DVC, MLflow, FastAPI, Docker, GitHub Actions và chương trình tạo bằng chứng cho báo cáo.
+
+Thử nghiệm monitor cho thấy lô bình thường trả \src{ok} và lô dịch chuyển trả \src{alert} ở đúng ba thuộc tính được sửa. Kết quả này xác nhận đường xử lý của bản mẫu ở tình huống kiểm tra đã thiết kế. Báo cáo trình bày đầy đủ nguồn gốc số liệu, ma trận nhầm lẫn và điều kiện của các ngưỡng, để người đọc có thể phân biệt số đo thực nghiệm với định hướng phát triển.
+
+\section{Hạn chế}
+Dữ liệu gốc là tổng hợp, không có thời gian hay lịch sử thiết bị, và nhãn mô tả trạng thái hỏng tại một quan sát. Do đó không thể dùng kết quả này để khẳng định khả năng cảnh báo sớm cho máy công nghiệp. Chỉ một phép chia dữ liệu và một bộ cấu hình cho mỗi thuật toán được thử; chưa có kiểm tra độ ổn định qua nhiều seed, kiểm định theo nhà máy hoặc đánh giá chi phí thực. Các ngưỡng giám sát là minh họa, chưa được hiệu chuẩn theo tần suất cảnh báo chấp nhận được.
+
+Hạ tầng hiện tại phục vụ một máy cá nhân: DVC chưa có remote, MLflow dùng SQLite cục bộ, chưa có triển khai API công khai, lịch thu thập nhãn hay cơ chế huấn luyện lại tự động. CI kiểm tra mã nhưng không thay thế kiểm thử dữ liệu và mô hình ở môi trường triển khai. Những giới hạn này phù hợp với phạm vi bản mẫu học phần và là cơ sở xác định công việc tiếp theo.
+
+\section{Hướng phát triển ưu tiên}
+Ưu tiên đầu tiên là dữ liệu: thu thập chuỗi cảm biến theo thiết bị, thời điểm sự cố và khoảng thời gian cần báo trước. Cần thiết kế lại nhãn theo chân trời dự báo, chia tập theo thời gian hoặc thiết bị và đánh giá trên giai đoạn triển khai về sau. Sau đó, nhóm có thể so sánh thêm cách hiệu chuẩn xác suất, các ngưỡng theo chi phí thực và phép đo độ không chắc chắn của hiệu năng. Một đường chuẩn đơn giản và đáng tin nên tiếp tục được giữ khi tăng độ phức tạp mô hình.
+
+Ưu tiên vận hành là lưu dữ liệu và mô hình vào remote có phiên bản, ghi commit và dấu băm vào MLflow, dựng tracking server dùng chung, kiểm tra image cùng hiện vật trước khi phát hành. Monitor cần kết nối với nhãn đến trễ và một quy trình phản hồi của người vận hành; cảnh báo drift nên dẫn tới điều tra thay vì tự động thay mô hình. Các bước này biến bản mẫu có thể chạy lại thành một hệ thống có kiểm soát thay đổi và có bằng chứng chất lượng sau triển khai.
+

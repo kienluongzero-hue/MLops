@@ -25,7 +25,7 @@ UCI CSV → kiểm tra dữ liệu → chia train/validation/test → tiền x�
                               reference.csv + dữ liệu mới → báo cáo giám sát
 ```
 
-Chỉ sáu đặc trưng cảm biến và loại sản phẩm được dùng để dự đoán. `UID`, `Product ID` là định danh; `TWF`, `HDF`, `PWF`, `OSF`, `RNF` là các nhãn nguyên nhân hỏng và không được dùng làm đặc trưng vì làm rò rỉ đáp án. Dữ liệu không có mốc thời gian thực tế để đánh giá dự báo trước theo thời gian; phép chia stratified được dùng cho bài toán phân loại bản ghi hiện tại.
+Chỉ sáu đặc trưng cảm biến và loại sản phẩm được dùng để dự đoán. `UDI`, `Product ID` là định danh; `TWF`, `HDF`, `PWF`, `OSF`, `RNF` là các nhãn nguyên nhân hỏng và không được dùng làm đặc trưng vì làm rò rỉ đáp án. Dữ liệu không có mốc thời gian thực tế để đánh giá dự báo trước theo thời gian; phép chia stratified được dùng cho bài toán phân loại bản ghi hiện tại.
 
 ## Kết quả chạy thử
 
@@ -83,6 +83,8 @@ python -m predictive_maintenance.monitor --current data/monitoring/drifted.csv -
 Khi chạy thử với 500 bản ghi mỗi lô, `normal.json` có trạng thái `ok`; `drifted.json` có trạng thái `alert` ở `Type`, nhiệt độ không khí và mô-men xoắn, đúng ba đặc trưng được sửa trong lô demo.
 
 ## Bằng chứng cho báo cáo
+
+Bản [báo cáo LaTeX 50 trang](output/pdf/bao_cao_MLOps_bao_tri_du_doan.pdf) nằm trong `output/pdf/`; mã nguồn và hướng dẫn biên dịch ở [`latex-report/`](latex-report/README.md). Các bảng, hình trong báo cáo được tạo từ dữ liệu và hiện vật thực nghiệm, có kiểm tra dấu băm và ma trận nhầm lẫn trước khi biên dịch.
 
 Sau khi chạy `dvc repro` và bốn lệnh demo giám sát ở trên, tạo số liệu và biểu đồ có thể đưa vào báo cáo:
 

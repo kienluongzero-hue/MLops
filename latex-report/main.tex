@@ -1,0 +1,105 @@
+\documentclass[12pt,a4paper,oneside]{report}
+\usepackage[a4paper,left=3cm,right=2.5cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\usepackage{polyglossia}
+\setdefaultlanguage{vietnamese}
+\setotherlanguage{english}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{graphicx,booktabs,tabularx,longtable,array,multirow}
+\usepackage{amsmath,amssymb}
+\usepackage{float,caption,subcaption}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{listings,xcolor}
+\usepackage{hyperref}
+\usepackage{xurl}
+\usepackage{microtype}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\hypersetup{hidelinks,pdftitle={Bao cao van hanh he thong hoc may - Bao tri du doan},pdfauthor={Luong Trung Kien, Ha Vinh Phuoc, Nguyen Van Tuan Tu}}
+\graphicspath{{figures/}{../reports/figures/}}
+\captionsetup{font=small,labelfont=bf}
+\setlist{itemsep=2pt,topsep=3pt}
+\setlength{\parindent}{1.2cm}
+\setlength{\parskip}{2pt}
+\setlength{\headheight}{14pt}
+\emergencystretch=3em
+\renewcommand{\contentsname}{Mục lục}
+\renewcommand{\listfigurename}{Danh mục hình}
+\renewcommand{\listtablename}{Danh mục bảng}
+\renewcommand{\bibname}{Tài liệu tham khảo}
+\renewcommand{\figurename}{Hình}
+\renewcommand{\tablename}{Bảng}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Báo cáo môn Vận hành hệ thống học máy}
+\fancyhead[R]{\small Bảo trì dự đoán}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\lstdefinestyle{code}{basicstyle=\ttfamily\footnotesize,breaklines=true,frame=single,framesep=5pt,showstringspaces=false,backgroundcolor=\color{gray!5},keywordstyle=\color{blue!60!black}}
+\lstset{style=code}
+\newcommand{\src}[1]{\nolinkurl{#1}}
+\newcommand{\dataset}{AI4I 2020}
+\newcommand{\project}{Hệ thống MLOps cho bảo trì dự đoán}
+
+\begin{document}
+\pagenumbering{roman}
+\begin{titlepage}
+\centering
+{\large BỘ GIÁO DỤC VÀ ĐÀO TẠO\par}
+\vspace{0.4cm}
+{\large BÁO CÁO HỌC PHẦN\par}
+\vspace{2.8cm}
+{\Large\bfseries VẬN HÀNH HỆ THỐNG HỌC MÁY\par}
+\vspace{1.0cm}
+{\Huge\bfseries HỆ THỐNG MLOps CHO BẢO TRÌ DỰ ĐOÁN\par}
+\vspace{0.4cm}
+{\Large Phân loại trạng thái hỏng máy trên dữ liệu AI4I 2020\par}
+\vspace{2cm}
+\begin{tabular}{ll}
+\textbf{Nhóm thực hiện:} & Lương Trung Kiên --- 20250386E\\
+& Hà Vĩnh Phước --- 20241617E\\
+& Nguyễn Văn Tuấn Tú --- 20260079E\\
+\textbf{Mã nguồn:} & \url{https://github.com/kienluongzero-hue/MLops}
+\end{tabular}
+\vfill
+{\large Tháng 11 năm 2026\par}
+\end{titlepage}
+\clearpage
+\chapter*{Tóm tắt}
+\addcontentsline{toc}{chapter}{Tóm tắt}
+Báo cáo trình bày quá trình xây dựng một hệ thống học máy có thể tái tạo, kiểm thử và quan sát được cho bài toán phân loại trạng thái hỏng máy. Nguồn dữ liệu là bộ \dataset{} của UCI gồm 10.000 bản ghi mô phỏng và 339 bản ghi hỏng máy. Nhóm xây dựng đường xử lý từ tải dữ liệu, chia tập có phân tầng, tiền xử lý, so sánh ba mô hình, theo dõi thí nghiệm đến đóng gói dịch vụ dự đoán và giám sát sự thay đổi phân phối đầu vào.
+
+Ba mô hình được so sánh gồm Logistic Regression, Random Forest và XGBoost. XGBoost đạt average precision 0,780 trên tập validation và được chọn trước khi đánh giá tập test. Ngưỡng xác suất 0,15 được chọn trên validation bằng điểm $F_2$. Trên 2.000 bản ghi test, mô hình đạt average precision 0,825, recall 0,794, precision 0,614; trong 68 trường hợp hỏng, hệ thống phát hiện đúng 54 và bỏ sót 14. Các kết quả này chỉ áp dụng cho cách chia tập và bộ dữ liệu mô phỏng đang xét.
+
+Pipeline DVC quản lý các bước tải dữ liệu và huấn luyện; MLflow lưu tham số cùng chỉ số; FastAPI phục vụ suy luận trong Docker; GitHub Actions chạy kiểm thử; công cụ giám sát so sánh một lô dữ liệu mới với tập train. Thử nghiệm dịch chuyển chủ động trên ba thuộc tính làm hệ thống phát cảnh báo. Báo cáo phân tích các quyết định kỹ thuật, phép đo, khả năng tái tạo, rủi ro rò rỉ nhãn và giới hạn khi chuyển sang dữ liệu máy thật.
+
+\noindent\textbf{Từ khóa:} MLOps, bảo trì dự đoán, AI4I, DVC, MLflow, XGBoost, giám sát dữ liệu.
+\clearpage
+\chapter*{Lời cam đoan và phạm vi}
+\addcontentsline{toc}{chapter}{Lời cam đoan và phạm vi}
+Các số liệu thực nghiệm trong báo cáo được lấy từ mã nguồn, tệp dữ liệu và hiện vật chạy được lưu cùng repository, không phải số liệu từ môi trường sản xuất. Những phân tích về tác động vận hành là nhận định trong phạm vi bài tập; nhóm chưa kiểm chứng hiệu năng trên dây chuyền công nghiệp. Dữ liệu \dataset{} là dữ liệu tổng hợp, còn nhãn \src{Machine failure} mô tả hỏng tại bản ghi hiện tại. Vì thế thuật ngữ ``bảo trì dự đoán'' trong tên đề tài chỉ bối cảnh ứng dụng, không hàm ý dự báo tuổi thọ còn lại hoặc cảnh báo trước một khoảng thời gian xác định.
+
+Bản báo cáo có thể được biên dịch lại từ mã LaTeX. Những hình và bảng số liệu phụ thuộc thực nghiệm được tạo bằng \src{latex-report/generate_assets.py}; nguồn số liệu là \src{data/raw/ai4i2020.csv}, \src{artifacts/metrics.json} và các báo cáo giám sát. Mỗi khi thay đổi pipeline, cần chạy lại chương trình tạo bằng chứng trước khi biên dịch.
+\clearpage
+\tableofcontents
+\clearpage
+\listoffigures
+\clearpage
+\listoftables
+\clearpage
+\pagenumbering{arabic}
+\include{chapters/01_intro}
+\include{chapters/02_foundations}
+\include{chapters/03_data}
+\include{chapters/04_architecture}
+\include{chapters/05_modeling}
+\include{chapters/06_implementation}
+\include{chapters/07_results}
+\include{chapters/08_conclusion}
+\include{references}
+\appendix
+\include{appendices}
+\end{document}

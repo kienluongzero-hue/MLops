@@ -11,3 +11,5 @@ mlflow.db
 .dvc/cache/
 .dvc/tmp/
 .dvc/config.local
+latex-report/build/
+tmp/

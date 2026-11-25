@@ -1,0 +1,60 @@
+\chapter{Hiện thực quy trình MLOps}
+\section{Cấu trúc repository và môi trường}
+Repository công khai của nhóm ở \url{https://github.com/kienluongzero-hue/MLops}. Mã chính nằm trong package \src{src/predictive_maintenance}; \src{tests} chứa kiểm thử; \src{reports} lưu bằng chứng và hình; \src{latex-report} chứa nguồn báo cáo. \src{pyproject.toml} khai báo phần phụ thuộc cơ bản, phần thêm cho huấn luyện, báo cáo và phát triển. Trong lần chạy được báo cáo, môi trường có Python 3.13.12, scikit-learn 1.9.1, XGBoost 3.4.1 và MLflow 3.18.0. Những phiên bản này ghi nhận trạng thái thực nghiệm, không có nghĩa mọi bản vá tương lai đều tái tạo bit-for-bit cùng kết quả.
+
+\section{DVC: mô tả quan hệ giữa các bước}
+\src{dvc.yaml} có hai stage. \src{download} gọi mô-đun tải CSV và xuất \src{data/raw/ai4i2020.csv}. \src{train} phụ thuộc CSV, mã huấn luyện, mã đặc trưng, mã chia tập và \src{pyproject.toml}; nó xuất mô hình, metric và tập tham chiếu. DVC dùng trạng thái phụ thuộc và khóa trong \src{dvc.lock} để biết khi nào cần chạy lại \cite{dvc}. Ví dụ, đổi định nghĩa tiền xử lý làm stage train lỗi thời, nhưng không buộc tải lại dữ liệu nếu CSV và bước download không đổi.
+
+\begin{lstlisting}[language={},caption={Hai stage chính trong cấu hình DVC},label={lst:dvc}]
+stages:
+  download:
+    cmd: python -m predictive_maintenance.data
+    outs: [data/raw/ai4i2020.csv]
+  train:
+    cmd: python -m predictive_maintenance.train
+    deps: [data/raw/ai4i2020.csv,
+           src/predictive_maintenance/train.py,
+           src/predictive_maintenance/features.py,
+           src/predictive_maintenance/splits.py,
+           pyproject.toml]
+    outs: [artifacts/model.joblib, artifacts/metrics.json,
+           artifacts/reference.csv]
+\end{lstlisting}
+Listing~\ref{lst:dvc} rút gọn cấu hình để thể hiện phụ thuộc, không phải bản thay thế cho tệp trong repository. Hiện dự án chưa có DVC remote. Người clone repository phải chạy stage download từ nguồn UCI và train trên máy mình; họ không thể \src{dvc pull} mô hình từ một kho hiện vật nhóm. SHA-256 của dữ liệu gốc hỗ trợ phát hiện sai khác nếu URL nguồn trả nội dung khác.
+
+\section{MLflow: dấu vết thí nghiệm}
+Trước khi chạy các ứng viên, chương trình đặt tracking URI là \src{sqlite:///mlflow.db} và chọn experiment \src{predictive-maintenance-ai4i}. Mỗi mô hình được khớp trong một MLflow run tên tương ứng. Run lưu tên mô hình, seed, số bản ghi train và validation, ngưỡng đã chọn, các metric validation. Sau khi chọn XGBoost, chương trình ghi thêm metric test và đính kèm mô hình đã xuất vào run được chọn. Giao diện MLflow cho phép so sánh các run và xem cùng một định nghĩa chỉ số \cite{mlflow}.
+
+SQLite cục bộ là lựa chọn đơn giản cho một máy; tệp database nằm ngoài Git. Khi nhiều thành viên cần cùng một lịch sử, nhóm phải dùng tracking server có kho backend và artifact chung, kiểm soát quyền truy cập và sao lưu. Cũng cần quy ước tên run, tag phiên bản dữ liệu và mã Git nếu quy mô thử nghiệm tăng. Báo cáo hiện tại không tuyên bố đã có model registry hay quy trình chuyển trạng thái mô hình sang production.
+
+\section{FastAPI và hợp đồng suy luận}
+Ứng dụng định nghĩa \src{GET /health} và \src{POST /predict}. Đầu vào POST là một đối tượng gồm \src{type}, \src{air_temperature}, \src{process_temperature}, \src{rotational_speed}, \src{torque}, \src{tool_wear}. Pydantic từ chối thiếu trường, sai kiểu hoặc giá trị nằm ngoài miền kiểm tra cơ bản. Sau khi ánh xạ sang tên cột huấn luyện, API trả \src{failure_probability}, \src{predicted_failure} và \src{threshold}. Tải mô hình có cache trong quá trình chạy để không đọc tệp cho mọi yêu cầu.
+
+\begin{lstlisting}[language={},caption={Ví dụ yêu cầu và phản hồi API},label={lst:api}]
+POST /predict
+{"type":"L","air_temperature":298.1,
+ "process_temperature":308.6,"rotational_speed":1551,
+ "torque":42.8,"tool_wear":0}
+
+{"failure_probability": <gia tri thuc>,
+ "predicted_failure": <true hoac false>,
+ "threshold": 0.15}
+\end{lstlisting}
+Listing~\ref{lst:api} cố ý để trống xác suất cụ thể vì đó là kết quả phụ thuộc hiện vật mô hình và không được ghi nhận như một số liệu cố định của báo cáo. Trường ngưỡng thực tế trong JSON có thể hiển thị gần 0,15 do biểu diễn số thực dấu phẩy động. Xác thực hiện tại chỉ kiểm tra miền giá trị rộng, chưa kiểm tra giới hạn vật lý phù hợp từng thiết bị; nếu áp dụng thực tế, hợp đồng cần giới hạn và đơn vị đo được thống nhất với hệ thống thu thập.
+
+\section{Docker và đóng gói dịch vụ}
+Dockerfile bắt đầu từ \src{python:3.13-slim}, sao chép cấu hình phụ thuộc và mã nguồn, cài gói cho API, rồi chạy Uvicorn trên cổng 8000 \cite{docker}. Tệp yêu cầu riêng cho API tránh cài MLflow, DVC và công cụ vẽ hình vào image phục vụ. Mô hình không được đóng sẵn trong image; khi chạy container, thư mục \src{artifacts} từ máy chủ được gắn vào \src{/app/artifacts} ở chế độ chỉ đọc. Điều này cho phép thay hiện vật mô hình mà không sửa mã image, nhưng người triển khai phải bảo đảm mô hình được sinh từ phiên bản package tương thích và được kiểm tra trước khi gắn.
+
+\begin{lstlisting}[language={},caption={Dựng và chạy API trong Docker},label={lst:docker}]
+docker build -t predictive-maintenance-api .
+docker run --rm -p 8000:8000 \
+  -v "${PWD}/artifacts:/app/artifacts:ro" \
+  predictive-maintenance-api
+\end{lstlisting}
+Lệnh gắn volume trong Listing~\ref{lst:docker} mang tính minh họa cho shell có cú pháp tương ứng; README có phiên bản PowerShell một dòng. Container trả 503 ở \src{/health} nếu chưa tìm thấy hiện vật. Docker tạo môi trường chạy đồng nhất hơn giữa máy, nhưng không bảo đảm chất lượng mô hình khi dữ liệu triển khai khác dữ liệu phát triển.
+
+\section{Kiểm thử tự động và bằng chứng}
+Workflow GitHub Actions chạy khi push hoặc mở pull request. Nó checkout mã, chuẩn bị Python 3.12, cài gói với phần \src{dev} rồi chạy \src{pytest} \cite{actions}. Đây là bước kiểm soát hồi quy ở mức mã, không chạy toàn bộ huấn luyện vì pipeline còn phụ thuộc dữ liệu tải ngoài và thời gian huấn luyện. Kiểm thử API và các hàm xử lý giúp phát hiện lỗi schema và thay đổi hành vi cơ bản. Trong một hệ thống triển khai thật, cần thêm kiểm thử trên dữ liệu đại diện, kiểm tra chất lượng mô hình theo ngưỡng chấp nhận và thử image trong môi trường gần production; các gợi ý này phù hợp với quan điểm về kiểm thử hệ thống ML \cite{breck2017}.
+
+\src{python -m predictive_maintenance.report} tạo \src{reports/evidence.json}, \src{evidence.md} và hai hình về kết quả mô hình, giám sát. Chương trình đối chiếu kết quả từ bundle với tệp metric, giúp phát hiện nếu một tệp bị thay mà tệp kia chưa cập nhật. \src{latex-report/generate_assets.py} tạo các bảng và hình bổ sung trực tiếp từ cùng hiện vật. Cả hai bước là công cụ lập báo cáo, không thay thế kiểm thử độc lập của mô hình.
+

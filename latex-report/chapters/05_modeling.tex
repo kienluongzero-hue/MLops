@@ -1,0 +1,31 @@
+\chapter{Phương pháp xây dựng mô hình}
+\section{Chuẩn bị đầu vào}
+Nhóm chỉ nhận sáu cột trong Bảng~\ref{tab:features} vào $X$. \src{Type} được one-hot encoding; năm biến số được StandardScaler khớp trên train. Cùng một \src{ColumnTransformer} được đặt trước từng bộ phân loại. Mặc dù cây quyết định thường không đòi hỏi chuẩn hóa biến số, cách thống nhất tiền xử lý khiến so sánh ba ứng viên dùng đúng cùng ma trận thuộc tính và tránh nhánh xử lý riêng cho từng mô hình. Nó không có nghĩa chuẩn hóa làm XGBoost mạnh hơn; báo cáo chưa thực hiện thí nghiệm cắt bỏ bước này.
+
+Hàm chọn thuộc tính từ chối dữ liệu thiếu ở các cột bắt buộc, loại \src{Type} lạ và nhãn ngoài $\{0,1\}$. Sau phép chia, bộ tiền xử lý chỉ được \src{fit} cùng mô hình trên tập train. Bất kỳ thống kê trung bình, độ lệch chuẩn hay mã hóa danh mục nào cũng không được tính từ test. Đây là điểm cần kiểm tra khi chuyển mã từ notebook sang dịch vụ, vì hai đường tiền xử lý không đồng nhất có thể tạo dự đoán khác nhau dù dùng cùng hệ số mô hình.
+
+\section{Các mô hình ứng viên và cấu hình}
+Ba ứng viên được định nghĩa tường minh trong \src{train.py}. Logistic Regression có tối đa 1.000 vòng lặp và \src{class_weight="balanced"}. Random Forest có 200 cây, \src{min_samples_leaf=2} và \src{class_weight="balanced_subsample"}. XGBoost có 250 cây, \src{max_depth=4}, \src{learning_rate=0.05}, \src{subsample=0.9}, \src{colsample_bytree=0.9} và hàm đánh giá nội bộ \src{logloss}. Cả ba dùng seed 42 ở các chỗ liên quan và chạy trên CPU.
+
+Đây là một tập cấu hình cố định nhằm so sánh quy trình, không phải tìm kiếm rộng để đạt điểm tối đa. XGBoost không dùng trọng số lớp trong triển khai hiện tại; điều đó cần được nhớ khi giải thích kết quả giữa các mô hình. Nếu tiếp tục tối ưu, nên tách một quy trình tìm kiếm siêu tham số trên train/validation, giới hạn ngân sách thử nghiệm và chỉ kiểm tra test sau khi chốt toàn bộ lựa chọn. Việc lặp lại lựa chọn nhiều lần theo test sẽ làm ước lượng test quá lạc quan.
+
+\section{Quy tắc lựa chọn}
+Với từng ứng viên $m$, chương trình tính xác suất trên validation và tính $AP_m$. Mô hình có AP lớn nhất được chọn. Việc chọn theo AP phản ánh mong muốn xếp các trường hợp hỏng lên trước trong dữ liệu có tỷ lệ dương thấp. Sau đó, với xác suất validation của mỗi mô hình, chương trình quét 91 ngưỡng cách đều từ 0,05 đến 0,95 và chọn ngưỡng cho $F_2$ cao nhất. \src{numpy.argmax} lấy vị trí đầu tiên khi có hòa điểm, tức là ngưỡng thấp hơn trong dãy tăng dần. Ngưỡng của ứng viên được chọn đi cùng hiện vật mô hình.
+
+\begin{equation}
+m^*=\underset{m\in\{LR,RF,XGB\}}{\arg\max}\,AP_m^{(val)},\qquad
+t^*=\underset{t\in\{0.05,0.06,\ldots,0.95\}}{\arg\max}\,F_2^{(val)}(m^*,t).
+\end{equation}
+
+Quy tắc này tách hai mục tiêu: chọn thuật toán xếp hạng tốt và chọn điểm vận hành ưu tiên recall. Nó không đưa ra xác suất đã hiệu chuẩn cho quyết định chi phí. Ngưỡng 0,15 là kết quả trên validation của dataset hiện tại; không nên sao chép nguyên xi sang máy thật. Để quyết định ngưỡng thực tế, cần đánh giá hiệu chuẩn, tần suất cảnh báo, chi phí kiểm tra và chi phí bỏ sót cùng chuyên gia bảo trì.
+
+\section{Các chỉ số đánh giá}
+Sau khi chọn mô hình và ngưỡng, chương trình tính AP, ROC-AUC, precision, recall, $F_1$, $F_2$ và bốn ô ma trận nhầm lẫn trên test. AP và ROC-AUC sử dụng xác suất chưa nhị phân hóa; các chỉ số còn lại dùng $p\geq t^*$. Việc báo cả hai loại số đo tránh diễn giải sai rằng AP là precision tại ngưỡng được chọn. Bảng validation cũng ghi precision, recall và $F_2$ tại ngưỡng riêng của từng ứng viên, giúp nhìn mức đánh đổi khi chuyển từ khả năng xếp hạng sang cảnh báo cụ thể.
+
+Số lượng dương ở test chỉ là 68, vì vậy các chỉ số theo lớp hỏng chịu biến động nếu thay đổi phép chia. Báo cáo không ước lượng khoảng tin cậy hay đánh giá trên nhiều seed, nên không thể khẳng định chênh lệch nhỏ giữa các cấu hình là bền vững. Tuy nhiên, so sánh validation của ba mô hình cho thấy khác biệt AP khá rõ trong chính phép chia đã định. Kết quả test được trình bày như bằng chứng thực nghiệm có giới hạn, không phải bảo đảm vận hành.
+
+\section{Lưu hiện vật và tái hiện dự đoán}
+Bundle \src{model.joblib} chứa đối tượng pipeline đã khớp, ngưỡng và danh sách đặc trưng. \src{metrics.json} là tóm tắt có cấu trúc; nó ghi toàn bộ bảng so sánh validation và kết quả test. MLflow lưu tham số, các metric theo tiền tố \src{validation_} và các metric test gắn với run mô hình được chọn; mô hình và tệp metric cũng được đính kèm run này. Tệp \src{reference.csv} được xuất từ \emph{train} sau chia tập, giữ nguyên sáu cột đầu vào để monitor đọc lại.
+
+Chương trình tạo bằng chứng của báo cáo kiểm tra dữ liệu và tính lại dự đoán từ bundle trước khi dựng biểu đồ. Cơ chế này hữu ích vì sao chép số liệu thủ công từ nhiều lần chạy dễ gây nhầm lẫn. Dù vậy, các hiện vật nhị phân vẫn phụ thuộc phiên bản thư viện; dự án ghi phiên bản đã chạy và Docker API dùng tập phụ thuộc tương thích. Với hệ thống lâu dài, cần một kho hiện vật có phiên bản, kiểm tra tương thích khi nâng cấp thư viện và quy trình phê duyệt mô hình.
+
