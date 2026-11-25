@@ -21,8 +21,8 @@ stages:
       size: 522048
     - path: pyproject.toml
       hash: md5
-      md5: d6362c634f24e4c38750d0b81d1fd497
-      size: 642
+      md5: 2ab5f59421b7c9198c78b8440841dbb2
+      size: 646
     - path: src/predictive_maintenance/features.py
       hash: md5
       md5: 3991e139c42e32f2d1e7d8b1ff3c5de0

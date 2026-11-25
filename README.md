@@ -35,7 +35,7 @@ Với seed 42, tỷ lệ hỏng là 3,39%. Chia dữ liệu thành 6.400 bản g
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -e ".[dev]"
+python -m pip install -e ".[train,dev]"
 python -m predictive_maintenance.data
 python -m predictive_maintenance.train
 python -m pytest
@@ -56,6 +56,8 @@ Invoke-RestMethod -Uri http://127.0.0.1:8000/predict -Method Post -ContentType '
 ```
 
 Chạy API bằng Docker sau khi đã huấn luyện:
+
+Image chỉ cài các thư viện phục vụ API và dùng bản [XGBoost chỉ chạy CPU](https://xgboost.readthedocs.io/en/latest/install.html#minimal-installation-cpu-only). Các phiên bản trong `requirements-api.txt` khớp môi trường đã tạo `model.joblib`.
 
 ```powershell
 docker build -t predictive-maintenance-api .

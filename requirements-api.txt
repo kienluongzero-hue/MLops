@@ -1,0 +1,8 @@
+# Match the versions used to serialize artifacts/model.joblib.
+fastapi==0.165.0
+joblib==1.6.0
+numpy==2.5.5
+pandas==2.3.3
+scikit-learn==1.9.1
+uvicorn==0.54.0
+xgboost-cpu==3.4.1
