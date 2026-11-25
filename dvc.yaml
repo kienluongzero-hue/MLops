@@ -11,6 +11,7 @@ stages:
       - data/raw/ai4i2020.csv
       - src/predictive_maintenance/train.py
       - src/predictive_maintenance/features.py
+      - src/predictive_maintenance/splits.py
       - pyproject.toml
     outs:
       - artifacts/model.joblib

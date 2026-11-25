@@ -36,7 +36,7 @@ Với seed 42, tỷ lệ hỏng là 3,39%. Chia dữ liệu thành 6.400 bản g
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -e ".[train,dev]"
+python -m pip install -e ".[train,report,dev]"
 python -m predictive_maintenance.data
 python -m predictive_maintenance.train
 python -m pytest
@@ -81,6 +81,16 @@ python -m predictive_maintenance.monitor --current data/monitoring/drifted.csv -
 Để giám sát dữ liệu mới, thay `--current` bằng đường dẫn CSV thực tế. Công cụ này chỉ phát hiện thay đổi phân phối đầu vào; nó chưa đo được chất lượng dự đoán khi chưa có nhãn thật và không tự động huấn luyện lại mô hình. Dữ liệu demo không được dùng để chọn mô hình hoặc điều chỉnh ngưỡng đánh giá trên tập test.
 
 Khi chạy thử với 500 bản ghi mỗi lô, `normal.json` có trạng thái `ok`; `drifted.json` có trạng thái `alert` ở `Type`, nhiệt độ không khí và mô-men xoắn, đúng ba đặc trưng được sửa trong lô demo.
+
+## Bằng chứng cho báo cáo
+
+Sau khi chạy `dvc repro` và bốn lệnh demo giám sát ở trên, tạo số liệu và biểu đồ có thể đưa vào báo cáo:
+
+```powershell
+python -m predictive_maintenance.report
+```
+
+Lệnh này đối chiếu mô hình đã lưu với PR-AUC và ma trận nhầm lẫn trong `metrics.json`; nếu số liệu không khớp, lệnh dừng với lỗi. Kết quả được lưu trong [`reports/evidence.md`](reports/evidence.md), [`reports/evidence.json`](reports/evidence.json) và hai hình PNG ở `reports/figures/`. [Khung báo cáo](reports/report_outline.md) ghi lại cấu trúc trình bày, kiến trúc và các giới hạn cần nêu. Các tệp nhỏ này được đưa vào Git để nhóm có thể dùng lại khi làm báo cáo hoặc slide; dữ liệu gốc và mô hình vẫn nằm ngoài Git.
 
 ## Đánh giá và giới hạn
 

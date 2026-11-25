@@ -20,18 +20,17 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
-from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from xgboost import XGBClassifier
 
 from .features import FEATURES, NUMERIC_FEATURES, select_features
+from .splits import SEED, split_dataset
 
 DEFAULT_DATA = Path("data/raw/ai4i2020.csv")
 DEFAULT_MODEL = Path("artifacts/model.joblib")
 DEFAULT_METRICS = Path("artifacts/metrics.json")
 DEFAULT_REFERENCE = Path("artifacts/reference.csv")
-SEED = 42
 
 
 def make_pipeline(estimator):
@@ -86,12 +85,7 @@ def train(data_path=DEFAULT_DATA, model_path=DEFAULT_MODEL, metrics_path=DEFAULT
     if len(frame) < 100 or y.sum() < 10:
         raise ValueError("Dataset is too small or contains too few failures")
 
-    x_develop, x_test, y_develop, y_test = train_test_split(
-        x, y, test_size=0.2, stratify=y, random_state=SEED
-    )
-    x_train, x_validation, y_train, y_validation = train_test_split(
-        x_develop, y_develop, test_size=0.2, stratify=y_develop, random_state=SEED
-    )
+    x_train, x_validation, x_test, y_train, y_validation, y_test = split_dataset(x, y)
 
     mlflow.set_tracking_uri("sqlite:///mlflow.db")
     mlflow.set_experiment("predictive-maintenance-ai4i")

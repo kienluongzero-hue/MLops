@@ -1,0 +1,227 @@
+{
+  "dataset_sha256": "dc6630cd9b1f0f853922fad78a1b6436570d3f1ec863f1dd5c4340ac56bc8a8e",
+  "dataset_source": "https://archive.ics.uci.edu/dataset/601/ai4i",
+  "dataset_doi": "10.24432/C5HS5C",
+  "environment": {
+    "python": "3.13.12",
+    "scikit-learn": "1.9.1",
+    "xgboost": "3.4.1",
+    "mlflow": "3.18.0"
+  },
+  "metrics": {
+    "dataset_rows": 10000,
+    "failure_rate": 0.0339,
+    "split_rows": {
+      "train": 6400,
+      "validation": 1600,
+      "test": 2000
+    },
+    "selected_model": "xgboost",
+    "threshold": 0.14999999999999997,
+    "validation": {
+      "logistic_regression": {
+        "threshold": 0.74,
+        "average_precision": 0.4197055135043559,
+        "roc_auc": 0.8927339370418285,
+        "precision": 0.2846153846153846,
+        "recall": 0.6851851851851852,
+        "f1": 0.40217391304347827,
+        "f2": 0.5346820809248555,
+        "true_negative": 1453,
+        "false_positive": 93,
+        "false_negative": 17,
+        "true_positive": 37
+      },
+      "random_forest": {
+        "threshold": 0.20999999999999996,
+        "average_precision": 0.7117706506833827,
+        "roc_auc": 0.9651130755593887,
+        "precision": 0.44,
+        "recall": 0.8148148148148148,
+        "f1": 0.5714285714285714,
+        "f2": 0.6962025316455697,
+        "true_negative": 1490,
+        "false_positive": 56,
+        "false_negative": 10,
+        "true_positive": 44
+      },
+      "xgboost": {
+        "threshold": 0.14999999999999997,
+        "average_precision": 0.78048242593883,
+        "roc_auc": 0.9751928513248048,
+        "precision": 0.581081081081081,
+        "recall": 0.7962962962962963,
+        "f1": 0.671875,
+        "f2": 0.7413793103448276,
+        "true_negative": 1515,
+        "false_positive": 31,
+        "false_negative": 11,
+        "true_positive": 43
+      }
+    },
+    "test": {
+      "average_precision": 0.8252221271927636,
+      "roc_auc": 0.9737699427597126,
+      "precision": 0.6136363636363636,
+      "recall": 0.7941176470588235,
+      "f1": 0.6923076923076923,
+      "f2": 0.75,
+      "true_negative": 1898,
+      "false_positive": 34,
+      "false_negative": 14,
+      "true_positive": 54
+    }
+  },
+  "monitoring": {
+    "normal": {
+      "reference_rows": 6400,
+      "current_rows": 500,
+      "drift_detected": false,
+      "drifted_features": [],
+      "data_quality_alert": false,
+      "quality_issues": {},
+      "status": "ok",
+      "features": {
+        "Type": {
+          "method": "total_variation_distance",
+          "statistic": 0.009281250000000033,
+          "threshold": 0.1,
+          "invalid_rows": 0,
+          "drift_detected": false
+        },
+        "Air temperature [K]": {
+          "method": "kolmogorov_smirnov",
+          "statistic": 0.03265625,
+          "p_value": 0.6928039906731607,
+          "threshold": 0.2,
+          "p_value_threshold": 0.01,
+          "reference_mean": 300.00665625,
+          "current_mean": 299.907,
+          "invalid_rows": 0,
+          "drift_detected": false
+        },
+        "Process temperature [K]": {
+          "method": "kolmogorov_smirnov",
+          "statistic": 0.038250000000000006,
+          "p_value": 0.49378077849871427,
+          "threshold": 0.2,
+          "p_value_threshold": 0.01,
+          "reference_mean": 310.00484375,
+          "current_mean": 309.915,
+          "invalid_rows": 0,
+          "drift_detected": false
+        },
+        "Rotational speed [rpm]": {
+          "method": "kolmogorov_smirnov",
+          "statistic": 0.040312500000000084,
+          "p_value": 0.42674356047936707,
+          "threshold": 0.2,
+          "p_value_threshold": 0.01,
+          "reference_mean": 1539.08109375,
+          "current_mean": 1533.942,
+          "invalid_rows": 0,
+          "drift_detected": false
+        },
+        "Torque [Nm]": {
+          "method": "kolmogorov_smirnov",
+          "statistic": 0.042312499999999975,
+          "p_value": 0.36695376596626217,
+          "threshold": 0.2,
+          "p_value_threshold": 0.01,
+          "reference_mean": 39.993671875,
+          "current_mean": 40.285,
+          "invalid_rows": 0,
+          "drift_detected": false
+        },
+        "Tool wear [min]": {
+          "method": "kolmogorov_smirnov",
+          "statistic": 0.05746875000000001,
+          "p_value": 0.08979407534814274,
+          "threshold": 0.2,
+          "p_value_threshold": 0.01,
+          "reference_mean": 107.2321875,
+          "current_mean": 112.316,
+          "invalid_rows": 0,
+          "drift_detected": false
+        }
+      }
+    },
+    "shifted": {
+      "reference_rows": 6400,
+      "current_rows": 500,
+      "drift_detected": true,
+      "drifted_features": [
+        "Type",
+        "Air temperature [K]",
+        "Torque [Nm]"
+      ],
+      "data_quality_alert": false,
+      "quality_issues": {},
+      "status": "alert",
+      "features": {
+        "Type": {
+          "method": "total_variation_distance",
+          "statistic": 0.54128125,
+          "threshold": 0.1,
+          "invalid_rows": 0,
+          "drift_detected": true
+        },
+        "Air temperature [K]": {
+          "method": "kolmogorov_smirnov",
+          "statistic": 0.75603125,
+          "p_value": 4.2116577519147387e-271,
+          "threshold": 0.2,
+          "p_value_threshold": 0.01,
+          "reference_mean": 300.00665625,
+          "current_mean": 304.907,
+          "invalid_rows": 0,
+          "drift_detected": true
+        },
+        "Process temperature [K]": {
+          "method": "kolmogorov_smirnov",
+          "statistic": 0.038250000000000006,
+          "p_value": 0.49378077849871427,
+          "threshold": 0.2,
+          "p_value_threshold": 0.01,
+          "reference_mean": 310.00484375,
+          "current_mean": 309.915,
+          "invalid_rows": 0,
+          "drift_detected": false
+        },
+        "Rotational speed [rpm]": {
+          "method": "kolmogorov_smirnov",
+          "statistic": 0.040312500000000084,
+          "p_value": 0.42674356047936707,
+          "threshold": 0.2,
+          "p_value_threshold": 0.01,
+          "reference_mean": 1539.08109375,
+          "current_mean": 1533.942,
+          "invalid_rows": 0,
+          "drift_detected": false
+        },
+        "Torque [Nm]": {
+          "method": "kolmogorov_smirnov",
+          "statistic": 0.3986875000000001,
+          "p_value": 7.68758447092213e-67,
+          "threshold": 0.2,
+          "p_value_threshold": 0.01,
+          "reference_mean": 39.993671875,
+          "current_mean": 50.285,
+          "invalid_rows": 0,
+          "drift_detected": true
+        },
+        "Tool wear [min]": {
+          "method": "kolmogorov_smirnov",
+          "statistic": 0.05746875000000001,
+          "p_value": 0.08979407534814274,
+          "threshold": 0.2,
+          "p_value_threshold": 0.01,
+          "reference_mean": 107.2321875,
+          "current_mean": 112.316,
+          "invalid_rows": 0,
+          "drift_detected": false
+        }
+      }
+    }
+  }
+}
