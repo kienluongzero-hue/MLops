@@ -21,16 +21,16 @@ stages:
       size: 522048
     - path: pyproject.toml
       hash: md5
-      md5: 2ab5f59421b7c9198c78b8440841dbb2
-      size: 646
+      md5: 07bfda516259616b8e04a224c268bd23
+      size: 665
     - path: src/predictive_maintenance/features.py
       hash: md5
       md5: 3991e139c42e32f2d1e7d8b1ff3c5de0
       size: 972
     - path: src/predictive_maintenance/train.py
       hash: md5
-      md5: fabadb77cee596404849f43669ed161b
-      size: 6334
+      md5: dcc4f45a4ce095b2f6ca9fc03cbf0762
+      size: 6664
     outs:
     - path: artifacts/metrics.json
       hash: md5
@@ -40,3 +40,7 @@ stages:
       hash: md5
       md5: c508dbd594a2ac6bad2b72adac4d3ffb
       size: 376709
+    - path: artifacts/reference.csv
+      hash: md5
+      md5: 5ddd9f9d79d2c1bcad61c6818c7da3b2
+      size: 182377

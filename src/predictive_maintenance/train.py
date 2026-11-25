@@ -30,6 +30,7 @@ from .features import FEATURES, NUMERIC_FEATURES, select_features
 DEFAULT_DATA = Path("data/raw/ai4i2020.csv")
 DEFAULT_MODEL = Path("artifacts/model.joblib")
 DEFAULT_METRICS = Path("artifacts/metrics.json")
+DEFAULT_REFERENCE = Path("artifacts/reference.csv")
 SEED = 42
 
 
@@ -79,7 +80,7 @@ def evaluate(y_true, probabilities, threshold):
     }
 
 
-def train(data_path=DEFAULT_DATA, model_path=DEFAULT_MODEL, metrics_path=DEFAULT_METRICS):
+def train(data_path=DEFAULT_DATA, model_path=DEFAULT_MODEL, metrics_path=DEFAULT_METRICS, reference_path=DEFAULT_REFERENCE):
     frame = pd.read_csv(data_path)
     x, y = select_features(frame)
     if len(frame) < 100 or y.sum() < 10:
@@ -129,10 +130,13 @@ def train(data_path=DEFAULT_DATA, model_path=DEFAULT_MODEL, metrics_path=DEFAULT
     }
     model_path = Path(model_path)
     metrics_path = Path(metrics_path)
+    reference_path = Path(reference_path)
     model_path.parent.mkdir(parents=True, exist_ok=True)
     metrics_path.parent.mkdir(parents=True, exist_ok=True)
+    reference_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": best["model"], "threshold": best["threshold"], "features": FEATURES}, model_path)
     metrics_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    x_train.to_csv(reference_path, index=False)
     with mlflow.start_run(run_id=best["run_id"]):
         mlflow.log_metrics({f"test_{key}": value for key, value in test_metrics.items()})
         mlflow.log_artifact(str(model_path), artifact_path="selected_model")
@@ -146,8 +150,9 @@ def main():
     parser.add_argument("--data", type=Path, default=DEFAULT_DATA)
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
     parser.add_argument("--metrics", type=Path, default=DEFAULT_METRICS)
+    parser.add_argument("--reference", type=Path, default=DEFAULT_REFERENCE)
     args = parser.parse_args()
-    train(args.data, args.model, args.metrics)
+    train(args.data, args.model, args.metrics, args.reference)
 
 
 if __name__ == "__main__":

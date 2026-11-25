@@ -4,6 +4,7 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 data/raw/
+data/monitoring/
 artifacts/
 mlruns/
 mlflow.db

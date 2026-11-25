@@ -22,6 +22,7 @@ UCI CSV → kiểm tra dữ liệu → chia train/validation/test → tiền x�
                               MLflow: tham số, chỉ số, mô hình
                                                ↓
                               model.joblib + metrics.json → FastAPI
+                              reference.csv + dữ liệu mới → báo cáo giám sát
 ```
 
 Chỉ sáu đặc trưng cảm biến và loại sản phẩm được dùng để dự đoán. `UID`, `Product ID` là định danh; `TWF`, `HDF`, `PWF`, `OSF`, `RNF` là các nhãn nguyên nhân hỏng và không được dùng làm đặc trưng vì làm rò rỉ đáp án. Dữ liệu không có mốc thời gian thực tế để đánh giá dự báo trước theo thời gian; phép chia stratified được dùng cho bài toán phân loại bản ghi hiện tại.
@@ -63,6 +64,23 @@ Image chỉ cài các thư viện phục vụ API và dùng bản [XGBoost chỉ
 docker build -t predictive-maintenance-api .
 docker run --rm -p 8000:8000 -v "${PWD}/artifacts:/app/artifacts:ro" predictive-maintenance-api
 ```
+
+## Giám sát dữ liệu đầu vào
+
+Bước huấn luyện lưu đúng sáu đặc trưng của **tập train** vào `artifacts/reference.csv`. Công cụ giám sát nhận một CSV dữ liệu mới có cùng sáu cột, so sánh từng đặc trưng với tập tham chiếu rồi xuất báo cáo JSON. Với đặc trưng số, cảnh báo khi thống kê Kolmogorov–Smirnov ≥ 0,20 và p-value < 0,01; với `Type`, cảnh báo khi khoảng cách total variation ≥ 0,10. Báo cáo cũng ghi số giá trị thiếu hoặc không hợp lệ. Đây là các ngưỡng demo, cần hiệu chỉnh nếu có dữ liệu vận hành thật.
+
+Tạo hai lô demo từ phần dữ liệu đã giữ lại sau khi chia train/test. Lô thứ hai được cố ý tăng nhiệt độ, mô-men xoắn và thay đổi tỷ lệ loại sản phẩm:
+
+```powershell
+python -m predictive_maintenance.simulate --output data/monitoring/normal.csv
+python -m predictive_maintenance.monitor --current data/monitoring/normal.csv --output artifacts/monitoring/normal.json
+python -m predictive_maintenance.simulate --drift --output data/monitoring/drifted.csv
+python -m predictive_maintenance.monitor --current data/monitoring/drifted.csv --output artifacts/monitoring/drifted.json
+```
+
+Để giám sát dữ liệu mới, thay `--current` bằng đường dẫn CSV thực tế. Công cụ này chỉ phát hiện thay đổi phân phối đầu vào; nó chưa đo được chất lượng dự đoán khi chưa có nhãn thật và không tự động huấn luyện lại mô hình. Dữ liệu demo không được dùng để chọn mô hình hoặc điều chỉnh ngưỡng đánh giá trên tập test.
+
+Khi chạy thử với 500 bản ghi mỗi lô, `normal.json` có trạng thái `ok`; `drifted.json` có trạng thái `alert` ở `Type`, nhiệt độ không khí và mô-men xoắn, đúng ba đặc trưng được sửa trong lô demo.
 
 ## Đánh giá và giới hạn
 

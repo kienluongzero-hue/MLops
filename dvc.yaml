@@ -15,3 +15,4 @@ stages:
     outs:
       - artifacts/model.joblib
       - artifacts/metrics.json
+      - artifacts/reference.csv
