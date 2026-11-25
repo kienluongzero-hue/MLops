@@ -1,5 +1,13 @@
 # Khung báo cáo cuối kỳ
 
+## Nhóm thực hiện
+
+| Mã số sinh viên | Họ và tên |
+| --- | --- |
+| 20250386E | Lương Trung Kiên |
+| 20241617E | Hà Vĩnh Phước |
+| 20260079E | Nguyễn Văn Tuấn Tú |
+
 Đây là ghi chú làm việc cho nhóm. Các số liệu, bảng và hình đã kiểm chứng nằm trong [evidence.md](evidence.md); khi thay đổi pipeline, chạy lại lệnh xuất bằng chứng trước khi viết bản nộp.
 
 ## 1. Đặt vấn đề và mục tiêu

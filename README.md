@@ -90,7 +90,7 @@ Sau khi chạy `dvc repro` và bốn lệnh demo giám sát ở trên, tạo s�
 python -m predictive_maintenance.report
 ```
 
-Lệnh này đối chiếu mô hình đã lưu với PR-AUC và ma trận nhầm lẫn trong `metrics.json`; nếu số liệu không khớp, lệnh dừng với lỗi. Kết quả được lưu trong [`reports/evidence.md`](reports/evidence.md), [`reports/evidence.json`](reports/evidence.json) và hai hình PNG ở `reports/figures/`. [Khung báo cáo](reports/report_outline.md) ghi lại cấu trúc trình bày, kiến trúc và các giới hạn cần nêu. Các tệp nhỏ này được đưa vào Git để nhóm có thể dùng lại khi làm báo cáo hoặc slide; dữ liệu gốc và mô hình vẫn nằm ngoài Git.
+Lệnh này đối chiếu mô hình đã lưu với PR-AUC và ma trận nhầm lẫn trong `metrics.json`; nếu số liệu không khớp, lệnh dừng với lỗi. Kết quả được lưu trong [`reports/evidence.md`](reports/evidence.md), [`reports/evidence.json`](reports/evidence.json) và hai hình PNG ở `reports/figures/`. [Bản nháp báo cáo](reports/draft_report.md) đã có thành viên nhóm, nội dung thí nghiệm và kết luận; [khung báo cáo](reports/report_outline.md) ghi lại cấu trúc trình bày và các giới hạn cần nêu. Các tệp nhỏ này được đưa vào Git để nhóm có thể dùng lại khi làm báo cáo hoặc slide; dữ liệu gốc và mô hình vẫn nằm ngoài Git.
 
 ## Đánh giá và giới hạn
 
