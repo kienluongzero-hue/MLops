@@ -1,0 +1,42 @@
+schema: '2.0'
+stages:
+  download:
+    cmd: python -m predictive_maintenance.data
+    deps:
+    - path: src/predictive_maintenance/data.py
+      hash: md5
+      md5: 18cf337a1f9406915e489ecc02bbb166
+      size: 1163
+    outs:
+    - path: data/raw/ai4i2020.csv
+      hash: md5
+      md5: f0adaa9c5e25366c6df1cc2684479871
+      size: 522048
+  train:
+    cmd: python -m predictive_maintenance.train
+    deps:
+    - path: data/raw/ai4i2020.csv
+      hash: md5
+      md5: f0adaa9c5e25366c6df1cc2684479871
+      size: 522048
+    - path: pyproject.toml
+      hash: md5
+      md5: d6362c634f24e4c38750d0b81d1fd497
+      size: 642
+    - path: src/predictive_maintenance/features.py
+      hash: md5
+      md5: 3991e139c42e32f2d1e7d8b1ff3c5de0
+      size: 972
+    - path: src/predictive_maintenance/train.py
+      hash: md5
+      md5: fabadb77cee596404849f43669ed161b
+      size: 6334
+    outs:
+    - path: artifacts/metrics.json
+      hash: md5
+      md5: 2a63c78202850918bd50ae17e68d4c6b
+      size: 1776
+    - path: artifacts/model.joblib
+      hash: md5
+      md5: c508dbd594a2ac6bad2b72adac4d3ffb
+      size: 376709

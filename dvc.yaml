@@ -1,0 +1,17 @@
+stages:
+  download:
+    cmd: python -m predictive_maintenance.data
+    deps:
+      - src/predictive_maintenance/data.py
+    outs:
+      - data/raw/ai4i2020.csv
+  train:
+    cmd: python -m predictive_maintenance.train
+    deps:
+      - data/raw/ai4i2020.csv
+      - src/predictive_maintenance/train.py
+      - src/predictive_maintenance/features.py
+      - pyproject.toml
+    outs:
+      - artifacts/model.joblib
+      - artifacts/metrics.json
