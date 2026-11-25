@@ -173,8 +173,10 @@ def export(data_path, model_path, metrics_path, normal_path, shifted_path, outpu
     _evaluation_figure(test_y, probabilities, model_bundle["threshold"],
                        figures / "model_evaluation.png", average_precision)
     _drift_figure(normal, shifted, figures / "drift_scores.png")
-    (output_dir / "evidence.json").write_text(json.dumps(evidence, indent=2, ensure_ascii=False), encoding="utf-8")
-    (output_dir / "evidence.md").write_text(_markdown(evidence), encoding="utf-8")
+    (output_dir / "evidence.json").write_text(
+        json.dumps(evidence, indent=2, ensure_ascii=False), encoding="utf-8", newline="\n"
+    )
+    (output_dir / "evidence.md").write_text(_markdown(evidence), encoding="utf-8", newline="\n")
     print(f"Verified metrics and wrote report evidence to {output_dir}")
     return evidence
 
